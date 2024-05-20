@@ -144,15 +144,15 @@ class Object:
 if __name__ == "__main__":
     from PIL import Image, ImageDraw
     import time
-    img = Image.new("RGB", (200,200), "white")
+    img = Image.new("RGB", (500,500), "white")
     img_draw = ImageDraw.Draw(img)
     screen = Screen(img.width, img.height)
     camera = Camera(Vec3(0.0,0.0,0.0), img.width, img.height, 200)
     cube = Mesh(
         [
             #front face
-            Vertex(Vec3(-2, -0.5, 5)),
-            Vertex(Vec3(-2,  0.5, 5)),
+            Vertex(Vec3(-2, -0.5, 5.5)),
+            Vertex(Vec3(-2,  0.5, 5.5)),
             Vertex(Vec3(-1,  0.5, 5)),
             Vertex(Vec3(-1, -0.5, 5)),
             #back face
@@ -191,14 +191,13 @@ if __name__ == "__main__":
     
 
     cube_obj.position.x = x = 10
-    cube_obj.position.y = y = 3
+    cube_obj.position.y = y = 8
 
     for _ in range(0,25):
-        cube_obj.position.y -= 0.5
+        cube_obj.position.y -= 1
         cube_obj.position.x = x
         for _ in range(0,25):
-            cube_obj.position.x -= 0.5
-            time.sleep(0.1)
+            cube_obj.position.x -= 1
             cube_obj.render(render_func)
 
-            img.save("result.png")
+    img.save("result.png")
