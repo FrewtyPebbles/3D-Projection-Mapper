@@ -1,13 +1,16 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
-
+import math as m
 
 @dataclass
 class Vec3:
     x:float = 0.0
     y:float = 0.0
     z:float = 0.0
+
+    def __repr__(self) -> str:
+        return f"Vec3< {self.x}, {self.y}, {self.z} >"
 
     def project(self, camera:Camera, screen:Screen):
         screen = screen
@@ -27,7 +30,47 @@ class Vec3:
     def tuple2d(self):
         return (self.x, self.y)
     
-    def __add__(self, other:Vec3):
+    def get_magnitude(self):
+        return m.sqrt(self.x**2 + self.y**2 + self.z**2)
+    
+    def get_normalized(self):
+        mag = self.get_magnitude()
+        return Vec3(self.x/mag, self.y/mag, self.z/mag)
+    
+    def get_rotation_matrix(self, rotation:Vec3):
+        rot = rotation
+        return (
+            [ # X ROTATION
+                Vec3(1, 0, 0),
+                Vec3(0, m.cos(rot.x), -m.sin(rot.x)),
+                Vec3(0, m.sin(rot.x), m.cos(rot.x))
+            ],
+            [ # Y ROTATION
+                Vec3(m.cos(rot.y), 0, m.sin(rot.y)),
+                Vec3(0, 1, 0),
+                Vec3(-m.sin(rot.y), 0, m.cos(rot.y))
+            ],
+            [ # Z ROTATION
+                Vec3(m.cos(rot.z), -m.sin(rot.z), 0),
+                Vec3(m.sin(rot.z), m.cos(rot.z), 0),
+                Vec3(0, 0, 1)
+            ],
+        )
+    
+    def rotate(self, rotation:Vec3):
+        ret_rotation = Vec3(0, 0, 0)
+        for rot in self.get_rotation_matrix(rotation):
+            vec_buffer = []
+            for vec in rot:
+                vec_buffer.append(
+                    vec.x*self.x + vec.y*self.y + vec.z*self.z
+                )
+            
+            ret_rotation += Vec3(*vec_buffer)
+        return ret_rotation
+
+    
+    def __add__(self, other):
         if isinstance(other, Vec3):
             return Vec3(self.x + other.x,
             self.y + other.y,
@@ -76,12 +119,12 @@ class Vec3:
             return Vec3(self.x ** other,
             self.y ** other,
             self.z ** other)
-        
+
     def __neg__(self,):
         return Vec3(-self.x,
         -self.y,
         -self.z)
-    
+
 class Screen:
     def __init__(self, width:int, height:int) -> None:
         self.width = width
@@ -126,16 +169,26 @@ class Mesh:
         self.connect_verts(ret_verts, self.connection_indexes)
 
         return ret_verts
+
+    def get_rotation(self, rotation:Vec3):
+        ret_verts:list[Vertex] = []
+        for vert in self.vertexes:
+            ret_verts.append(Vertex(vert.position.rotate(rotation)))
+
+        self.connect_verts(ret_verts, self.connection_indexes)
+        return ret_verts
             
 
 
 class Object:
-    def __init__(self, mesh:Mesh, position:Vec3 = None) -> None:
+    def __init__(self, mesh:Mesh, position:Vec3 | None = None, rotation:Vec3 | None = None) -> None:
         self.mesh = mesh
         self.position = position if position else Vec3(0,0,0)
+        self.rotation = rotation if rotation else Vec3(0,0,0)
     
     def render(self, render_func:Callable[[Vec3, Vec3],None]):
         for vert in self.mesh.get_translation(self.position):
+            vert.position += vert.position.rotate(self.rotation)
             vert.render(render_func)
 
 
@@ -151,8 +204,8 @@ if __name__ == "__main__":
     cube = Mesh(
         [
             #front face
-            Vertex(Vec3(-2, -0.5, 5.5)),
-            Vertex(Vec3(-2,  0.5, 5.5)),
+            Vertex(Vec3(-2, -0.5, 5)),
+            Vertex(Vec3(-2,  0.5, 5)),
             Vertex(Vec3(-1,  0.5, 5)),
             Vertex(Vec3(-1, -0.5, 5)),
             #back face
@@ -194,10 +247,13 @@ if __name__ == "__main__":
     cube_obj.position.y = y = 8
 
     for _ in range(0,25):
-        cube_obj.position.y -= 1
+        cube_obj.position.y -= 2
         cube_obj.position.x = x
+        cube_obj.rotation.z = 0
         for _ in range(0,25):
-            cube_obj.position.x -= 1
+            cube_obj.position.x -= 2
+            cube_obj.rotation.z = 0.3
             cube_obj.render(render_func)
+
 
     img.save("result.png")
