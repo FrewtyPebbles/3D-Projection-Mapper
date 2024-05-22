@@ -65,7 +65,7 @@ frames.append(img.copy())
 
 for _ in range(60):
     img.paste(background)
-    teapot.rotation.y += 0.1
+    teapot.rotation += 0.1
     teapot.render(render_func)
     frames.append(img.copy())
 
