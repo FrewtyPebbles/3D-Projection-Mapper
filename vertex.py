@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from functools import lru_cache
 import math as m
 from typing import TYPE_CHECKING
 
@@ -25,8 +26,20 @@ class Vec3:
         x = x_prime * camera.view_width / screen.width
         y = y_prime * camera.view_height / screen.height
 
-        return -x, -y
+        return -x + (camera.view_width/2), -y + (camera.view_height/2)
     
+    def __hash__(self) -> int:
+        return hash(f"{self.x},{self.y},{self.z}")
+    
+    def __deepcopy__(self):
+        return self.clone()
+    
+    def __eq__(self, other):
+        if isinstance(other, Vec3):
+            return self.x == other.x and self.y == other.y and self.z == other.z
+        
+        return False
+
     def clone(self):
         return Vec3(self.x, self.y, self.z)
     
@@ -35,6 +48,7 @@ class Vec3:
     
     def tuple2d(self):
         return (self.x, self.y)
+    
     
     def get_magnitude(self):
         return m.sqrt(self.x**2 + self.y**2 + self.z**2)
@@ -45,7 +59,9 @@ class Vec3:
             return Vec3(self.x, self.y, self.z)
         return Vec3(self.x/mag, self.y/mag, self.z/mag)
     
+    
     @staticmethod
+    @lru_cache(1024)
     def get_rotation_matrix(rotation:Vec3):
         rot = rotation
         return (
@@ -66,9 +82,13 @@ class Vec3:
             ],
         )
     
+    
+
     def rotate(self, rotation:Vec3):
         rotation = rotation
         new_vec = self.clone()
+        if rotation == Vec3(0,0,0):
+            return new_vec
         for rot in new_vec.get_rotation_matrix(rotation):
             new_vec = Vec3(
                 rot[0].x*new_vec.x + rot[0].y*new_vec.y + rot[0].z*new_vec.z,

@@ -1,9 +1,11 @@
 from __future__ import annotations
+from copy import deepcopy
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Callable
 import math as m
 
-from mesh import Mesh
+from mesh import Mesh, Polygon
 from vertex import Vec3
             
 
@@ -13,32 +15,39 @@ class Object:
         self.mesh = mesh
         self.position = position if position else Vec3(0,0,0)
         self.rotation = rotation if rotation else Vec3(0,0,0)
+        self.rot_cache:Vec3 | None = None
     
-    def render(self, render_func:Callable[[Vec3, Vec3],None]):
-        verts = self.mesh.get_polygons(
+    def render(self,
+        render_function:Callable[[Polygon],None] | None = None,
+        wire_render_func:Callable[[Vec3, Vec3],None] | None = None
+    ):
+        polygons = self.mesh.get_polygons(
             self.get_translation(
-                self.position,
                 self.get_rotation(
-                    self.rotation,
                     self.mesh.vertexes
                 )
             )
-            
         )
 
-        for vert in verts:
-            vert.render(render_func)
+        for polygon in polygons:
+            if render_function:
+                render_function(polygon)
+            if wire_render_func:
+                polygon.render_lines(wire_render_func)
 
-    @classmethod
-    def get_translation(cls, translation:Vec3, vertexes:list[Vec3]) -> list[Vec3]:
+    def get_translation(self, vertexes:list[Vec3]) -> list[Vec3]:
+
         ret_verts:list[Vec3] = []
         for vert in vertexes:
-            ret_verts.append(vert + translation)
+            ret_verts.append(vert + self.position)
         return ret_verts
 
-    @classmethod
-    def get_rotation(cls, rotation:Vec3, vertexes:list[Vec3]) -> list[Vec3]:
+    def get_rotation(self, vertexes:list[Vec3]) -> list[Vec3]:
+        if self.rot_cache == self.rotation:
+            return vertexes
+        self.rot_cache = self.rotation
+
         ret_verts:list[Vec3] = []
         for vert in vertexes:
-            ret_verts.append(vert.rotate(rotation))
+            ret_verts.append(vert.rotate(self.rotation))
         return ret_verts
