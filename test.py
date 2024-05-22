@@ -35,7 +35,7 @@ def render_func(polygon:Polygon):
             if (camera.depth_buffer[x][y] > avg_d) \
             if camera.depth_buffer[x][y] != None else True:
                 if polygon.in_projection(x,y, camera, screen):
-                    img_draw.point((x,y), (shade, shade, shade, 255))
+                    img_draw.point((x,y), (255, shade, shade, 255))
                     camera.depth_buffer[x][y] = avg_d
 
 
