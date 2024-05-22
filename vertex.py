@@ -41,9 +41,12 @@ class Vec3:
     
     def get_normalized(self):
         mag = self.get_magnitude()
+        if mag == 0:
+            return Vec3(self.x, self.y, self.z)
         return Vec3(self.x/mag, self.y/mag, self.z/mag)
     
-    def get_rotation_matrix(self, rotation:Vec3):
+    @staticmethod
+    def get_rotation_matrix(rotation:Vec3):
         rot = rotation
         return (
             [ # X ROTATION
@@ -64,12 +67,14 @@ class Vec3:
         )
     
     def rotate(self, rotation:Vec3):
+        rotation = rotation
         new_vec = self.clone()
         for rot in new_vec.get_rotation_matrix(rotation):
-            new_vec.x = rot[0].x*new_vec.x + rot[0].y*new_vec.y + rot[0].z*new_vec.z
-            new_vec.y = rot[1].x*new_vec.x + rot[1].y*new_vec.y + rot[1].z*new_vec.z
-            new_vec.z = rot[2].x*new_vec.x + rot[2].y*new_vec.y + rot[2].z*new_vec.z
-
+            new_vec = Vec3(
+                rot[0].x*new_vec.x + rot[0].y*new_vec.y + rot[0].z*new_vec.z,
+                rot[1].x*new_vec.x + rot[1].y*new_vec.y + rot[1].z*new_vec.z,
+                rot[2].x*new_vec.x + rot[2].y*new_vec.y + rot[2].z*new_vec.z
+            )
         return new_vec
             
 
