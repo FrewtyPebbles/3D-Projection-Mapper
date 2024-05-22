@@ -25,7 +25,7 @@ def wire_render_func(pos_1:Vec3, pos_2:Vec3):
 
 def render_func(polygon:Polygon):
     "Polygon render function"
-    (min_x, min_y), (max_x, max_y) = polygon.get_projection_bounds(camera, screen)
+    (min_x, min_y), (max_x, max_y) = polygon.get_projection_rect(camera, screen)
     avg_d_norm = sum([ vec3.get_normalized().z * 255 for vec3 in polygon.connections])/len(polygon.connections)
     shade = int(avg_d_norm)
 

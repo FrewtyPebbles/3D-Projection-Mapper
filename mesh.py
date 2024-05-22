@@ -23,7 +23,7 @@ class Polygon:
     def project(self, camera:Camera, screen:Screen):
         return [con.project(camera, screen) for con in self.connections]
     
-    def get_projection_bounds(self, camera:Camera, screen:Screen) -> tuple[tuple[int, int], tuple[int, int]]:
+    def get_projection_rect(self, camera:Camera, screen:Screen) -> tuple[tuple[int, int], tuple[int, int]]:
         min_x:int = None
         max_x:int = None
         min_y:int = None
@@ -47,7 +47,6 @@ class Polygon:
         return (max(0, min_x-1), max(0, min_y-1)),(min(max_x+1, camera.view_width), min(max_y+1, camera.view_height))
     
     def in_projection(self, x:int, y:int, camera:Camera, screen:Screen) -> bool:
-        # BUG
         cons = self.project(camera, screen)
         result = False
         j = len(cons)-1
