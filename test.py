@@ -6,13 +6,14 @@ from object import Object
 from vertex import Vec3
 import math as m
 
+# Use PIL as render medium
 img = Image.new("RGB", (500,500))
 background = Image.open("./assets\space.jpg").resize((500,500))
 img_draw = ImageDraw.Draw(img)
+
+# Create Screen and Camera
 screen = Screen(img.width, img.height)
 camera = Camera(Vec3(0.0,0.0,0.0), img.width, img.height, 200)
-
-
 
 # render functions
 
@@ -38,15 +39,13 @@ def render_func(polygon:Polygon):
                     img_draw.point((x,y), (255, shade, shade, 255))
                     camera.depth_buffer[x][y] = avg_d
 
-
-
 # Load the mesh/create the 3D object
 t1 = time.time()
 teapot = Object(Mesh.from_file("./meshes/teapot.obj"), Vec3(0, -50, 100))
 t2 = time.time()
 print(f"time to load mesh: {(t2-t1)*1000}")
 
-
+# Record the animation frames
 frames = []
 t1 = time.time()
 
@@ -66,4 +65,5 @@ for _ in range(60):
 t2 = time.time()
 print(f"time to render: {(t2-t1)*1000} ms")
 
+# Save to render medium
 img.save("result.gif", save_all = True, append_images = frames, duration = 0.5, loop = 0)
