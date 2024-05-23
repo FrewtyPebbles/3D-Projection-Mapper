@@ -38,8 +38,7 @@ class Object:
     def get_translation(self, vertexes:list[Vec3]) -> list[Vec3]:
 
         ret_verts:list[Vec3] = []
-        for vert in vertexes:
-            ret_verts.append(vert + self.position)
+        ret_verts.extend([vert + self.position for vert in vertexes])
         return ret_verts
 
     def get_rotation(self, vertexes:list[Vec3]) -> list[Vec3]:
@@ -48,6 +47,5 @@ class Object:
         self.rot_cache = self.rotation
 
         ret_verts:list[Vec3] = []
-        for vert in vertexes:
-            ret_verts.append(vert.rotate(self.rotation))
+        ret_verts.extend([vert.rotate(self.rotation) for vert in vertexes])
         return ret_verts

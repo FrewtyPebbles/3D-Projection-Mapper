@@ -31,7 +31,6 @@ class Polygon:
         for coord in self.project(camera, screen):
             coord:tuple[int,int]
             x, y = coord
-            #print(x, y)
             
             
             if (max_y < y) if max_y != None else True:
@@ -48,12 +47,13 @@ class Polygon:
     
     def in_projection(self, x:int, y:int, camera:Camera, screen:Screen) -> bool:
         cons = self.project(camera, screen)
-        result = False
-        j = len(cons)-1
-        for i in range(len(cons)):
-            if cons[i][1] < y and cons[j][1] >= y or cons[j][1] < y and cons[i][1] >= y:
-                if cons[i][0] + (y - cons[i][1]) / (cons[j][1] - cons[i][1]) * (cons[j][0] - cons[i][0]) < x:
-                    result = not result
+        cons_len = len(cons)
+        result:bool = False
+        j:int = cons_len-1
+        for i in range(cons_len):
+            if (cons[i][1] < y and cons[j][1] >= y or cons[j][1] < y and cons[i][1] >= y) \
+            and (cons[i][0] + (y - cons[i][1]) / (cons[j][1] - cons[i][1]) * (cons[j][0] - cons[i][0]) < x):
+                result = not result
 
             j = i
         return result
@@ -68,8 +68,7 @@ class Mesh:
     def get_polygons(self, vertexes:list[Vec3]):
         """Connects vertexes together based on vertex index pairs in `connection_indexes` """
         polygons:list[Polygon] = []
-        for v_inds in self.polygons:
-            polygons.append(Polygon([vertexes[i] for i in v_inds]))
+        polygons.extend([Polygon([vertexes[i] for i in v_inds]) for v_inds in self.polygons])
         
         return polygons
     

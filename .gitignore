@@ -3,3 +3,4 @@ assets/
 __pycache__/
 result.png
 result.gif
+.venv/

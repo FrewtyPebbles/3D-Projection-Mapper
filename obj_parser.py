@@ -3,7 +3,7 @@ from vertex import Vec3
 class OBJParser:
     def __init__(self, file_path:str) -> None:
         self.file_path = file_path
-
+    
     def parse(self):
         verticies:list[Vec3] = []
         polygons:list[list[int]] = []
@@ -38,7 +38,8 @@ class OBJParser:
 
         return (verticies, polygons)
     
-    def parse_face(self, tokens:list[str]):
+    @staticmethod
+    def parse_face(tokens:list[str]):
         polygon:list[int] = []
         if "//" in tokens[0]:
             # Face with vertex normals

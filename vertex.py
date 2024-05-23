@@ -2,10 +2,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 import math as m
+import struct
 from typing import TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     from camera import Camera, Screen
+
+
 
 @dataclass
 class Vec3:
@@ -17,16 +21,18 @@ class Vec3:
         return f"Vec3< {self.x}, {self.y}, {self.z} >"
 
     def project(self, camera:Camera, screen:Screen):
-        screen = screen
-        camera = camera
+        x = self.x
+        y = self.y
+        z = self.z
+        cam_w, cam_h = camera.view_width, camera.view_height
+        scr_w, scr_h = screen.width, screen.height
         z_prime = camera.view_distance
-        y_prime = self.y*z_prime / self.z
-        x_prime = self.x*z_prime / self.z
+        y_prime:float = y*z_prime / z
+        x_prime:float = x*z_prime / z
 
-        x = x_prime * camera.view_width / screen.width
-        y = y_prime * camera.view_height / screen.height
-
-        return -x + (camera.view_width/2), -y + (camera.view_height/2)
+        x:float = x_prime * cam_w / scr_w
+        y:float = y_prime * cam_h / scr_h
+        return -x + (cam_w/2), -y + (cam_h/2)
     
     def __hash__(self) -> int:
         return hash(f"{self.x},{self.y},{self.z}")
@@ -61,7 +67,6 @@ class Vec3:
     
     
     @staticmethod
-    @lru_cache(1024)
     def get_rotation_matrix(rotation:Vec3):
         rot = rotation
         return (
@@ -81,7 +86,6 @@ class Vec3:
                 Vec3(0.0, 0.0, 1.0)
             ],
         )
-    
     
 
     def rotate(self, rotation:Vec3):

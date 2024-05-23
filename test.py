@@ -62,8 +62,17 @@ for _ in range(60):
     print(f"\tframe render time: {(rt2-rt1)*1000} ms")
     frames.append(img.copy())
 
+for _ in range(60):
+    img.paste(background)
+    teapot.position += 0.1
+    rt1 = time.time()
+    camera.render([teapot], render_func)
+    rt2 = time.time()
+    print(f"\tframe render time: {(rt2-rt1)*1000} ms")
+    frames.append(img.copy())
+
 t2 = time.time()
 print(f"time to render: {(t2-t1)*1000} ms")
 
 # Save to render medium
-img.save("result.gif", save_all = True, append_images = frames, duration = 0.5, loop = 0)
+img.save("result.gif", save_all = True, append_images = frames, duration = 3, loop = 0)
