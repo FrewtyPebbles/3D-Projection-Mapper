@@ -50,13 +50,13 @@ cdef class Vec3:
             return False
 
 
-    def clone(self):
+    cpdef Vec3 clone(self):
         return Vec3(self.x, self.y, self.z)
     
-    def tuple(self):
+    cpdef tuple[float, float, float] tuple(self):
         return (self.x, self.y, self.z)
     
-    def tuple2d(self):
+    cpdef tuple[float, float] tuple2d(self):
         return (self.x, self.y)
     
     

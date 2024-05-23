@@ -4,46 +4,50 @@ import itertools
 from typing import Callable, TYPE_CHECKING
 from vertex import Vec3
 from obj_parser import OBJParser
-
 from camera cimport Camera, Screen
+cdef extern from "macros.h":
+    cdef float c_min2(...)
+    cdef float c_max2(...)
+
 
 cdef class Polygon:
-    cdef public list[Vec3] connections
     def __init__(self, connections:list[Vec3]) -> None:
         self.connections = connections
 
-    def render_lines(self, render_func:Callable[[Vec3, Vec3],None]):
+    cpdef render_lines(self, render_func:Callable[[Vec3, Vec3],None]):
         # draw line from polygon to polygon
+        cdef Vec3 v1, v2
         for v1, v2 in itertools.pairwise(self.connections):
             
             render_func(v1, v2)
 
         render_func(v2, self.connections[0])
 
-    def project(self, camera:Camera, screen:Screen) -> list[tuple[float, float]]:
+    cpdef list[tuple[float, float]] project(self, Camera camera, Screen screen):
         return [con.project(camera, screen) for con in self.connections]
     
-    def get_projection_rect(self, camera:Camera, screen:Screen) -> tuple[tuple[float, float], tuple[float, float]]:
-        min_x:float | None = None
-        max_x:float | None = None
-        min_y:float | None = None
-        max_y:float | None = None
-        for coord in self.project(camera, screen):
-            coord:tuple[float,float]
-            x, y = coord
+    cpdef ((float,float),(float,float)) get_projection_rect(self, Camera camera, Screen screen):
+        cdef list[tuple[float,float]] coords = self.project(camera, screen)
+        cdef float x = coords[0][0]
+        cdef float y = coords[0][1]
+        cdef float min_x = x
+        cdef float max_x = x
+        cdef float min_y = y
+        cdef float max_y = y
+        for x, y in coords:
             
             
-            if (max_y < y) if max_y != None else True:
+            if (max_y < y):
                 max_y = y
-            if (min_y > y) if min_y != None else True:
+            if (min_y > y):
                 min_y = y
             
-            if (max_x < x) if max_x != None else True:
+            if (max_x < x):
                 max_x = x
-            if (min_x > x) if min_x != None else True:
+            if (min_x > x):
                 min_x = x
 
-        return (max(0.0, min_x-1), max(0.0, min_y-1)),(min(max_x+1, float(camera.view_width)), min(max_y+1, float(camera.view_height)))
+        return (c_max2(0.0, min_x-1), c_max2(0.0, min_y-1)),(c_min2(max_x+1, float(camera.view_width)), c_min2(max_y+1, float(camera.view_height)))
     
     cpdef public bint in_projection(self, int x, int y, Camera camera, Screen screen):
         cdef list[tuple[float, float]] cons = self.project(camera, screen)
@@ -61,8 +65,7 @@ cdef class Polygon:
 
 
 cdef class Mesh:
-    cdef public list[Vec3] vertexes
-    cdef public list[list[int]] polygons
+
     def __init__(self, vertexes:list[Vec3], polygons:list[list[int]]):
         self.vertexes = vertexes
         self.polygons = polygons
