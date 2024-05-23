@@ -33,8 +33,7 @@ def render_func(polygon:Polygon):
 
     for y in range(int(min_y), int(max_y)):
         for x in range(int(min_x), int(max_x)):
-            if (camera.depth_buffer[x][y] > avg_d) \
-            if camera.depth_buffer[x][y] != None else True:
+            if camera.depth_buffer[x][y] > avg_d:
                 if polygon.in_projection(x,y, camera, screen):
                     img_draw.point((x,y), (255, shade, shade, 255))
                     camera.depth_buffer[x][y] = avg_d

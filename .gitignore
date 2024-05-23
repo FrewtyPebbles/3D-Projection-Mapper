@@ -4,3 +4,8 @@ __pycache__/
 result.png
 result.gif
 .venv/
+.vscode/
+build/
+.env
+*.pyd
+*.c

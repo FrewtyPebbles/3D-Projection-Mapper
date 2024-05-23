@@ -11,27 +11,30 @@ if TYPE_CHECKING:
 
 
 
-@dataclass
-class Vec3:
-    x:float = 0.0
-    y:float = 0.0
-    z:float = 0.0
+
+cdef class Vec3:
+    def __init__(self, x:float = 0.0, y:float = 0.0, z:float = 0.0):
+        self.x = x
+        self.y = y
+        self.z = z
 
     def __repr__(self) -> str:
-        return f"Vec3< {self.x}, {self.y}, {self.z} >"
+        return "Vec3< {}, {}, {} >".format(self.x, self.y, self.z)
 
-    def project(self, camera:Camera, screen:Screen):
-        x = self.x
-        y = self.y
-        z = self.z
-        cam_w, cam_h = camera.view_width, camera.view_height
-        scr_w, scr_h = screen.width, screen.height
-        z_prime = camera.view_distance
-        y_prime:float = y*z_prime / z
-        x_prime:float = x*z_prime / z
+    cpdef (float, float) project(self, Camera camera, Screen screen):
+        cdef float x = self.x
+        cdef float y = self.y
+        cdef float z = self.z
+        cdef int cam_w = camera.view_width
+        cdef int cam_h = camera.view_height
+        cdef int scr_w = screen.width
+        cdef int scr_h = screen.height
+        cdef int z_prime = camera.view_distance
+        cdef float y_prime = y*z_prime / z
+        cdef float x_prime = x*z_prime / z
 
-        x:float = x_prime * cam_w / scr_w
-        y:float = y_prime * cam_h / scr_h
+        x = x_prime * cam_w / scr_w
+        y = y_prime * cam_h / scr_h
         return -x + (cam_w/2), -y + (cam_h/2)
     
     def __hash__(self) -> int:
@@ -40,11 +43,12 @@ class Vec3:
     def __deepcopy__(self):
         return self.clone()
     
-    def __eq__(self, other):
+    def __eq__(self, other:Vec3 | any):
         if isinstance(other, Vec3):
             return self.x == other.x and self.y == other.y and self.z == other.z
-        
-        return False
+        else:
+            return False
+
 
     def clone(self):
         return Vec3(self.x, self.y, self.z)
@@ -56,19 +60,21 @@ class Vec3:
         return (self.x, self.y)
     
     
-    def get_magnitude(self):
-        return m.sqrt(self.x**2 + self.y**2 + self.z**2)
+    cpdef public float get_magnitude(self):
+        cdef float x = self.x
+        cdef float y = self.y
+        cdef float z = self.z
+        return m.sqrt(x**2 + y**2 + z**2)
     
-    def get_normalized(self):
-        mag = self.get_magnitude()
-        if mag == 0:
+    cpdef public Vec3 get_normalized(self):
+        cdef float mag = self.get_magnitude()
+        if mag == 0.0:
             return Vec3(self.x, self.y, self.z)
         return Vec3(self.x/mag, self.y/mag, self.z/mag)
     
     
     @staticmethod
-    def get_rotation_matrix(rotation:Vec3):
-        rot = rotation
+    cdef public tuple[list[Vec3],list[Vec3],list[Vec3]] get_rotation_matrix(Vec3 rot):
         return (
             [ # X ROTATION
                 Vec3(1.0, 0.0, 0.0),
@@ -88,22 +94,27 @@ class Vec3:
         )
     
 
-    def rotate(self, rotation:Vec3):
-        rotation = rotation
-        new_vec = self.clone()
+    cpdef public Vec3 rotate(self, Vec3 rotation):
+        cdef Vec3 new_vec = self.clone()
+        cdef float x
+        cdef float y
+        cdef float z
         if rotation == Vec3(0,0,0):
             return new_vec
-        for rot in new_vec.get_rotation_matrix(rotation):
+        for rot in Vec3.get_rotation_matrix(rotation):
+            x = new_vec.x
+            y = new_vec.y
+            z = new_vec.z
             new_vec = Vec3(
-                rot[0].x*new_vec.x + rot[0].y*new_vec.y + rot[0].z*new_vec.z,
-                rot[1].x*new_vec.x + rot[1].y*new_vec.y + rot[1].z*new_vec.z,
-                rot[2].x*new_vec.x + rot[2].y*new_vec.y + rot[2].z*new_vec.z
+                rot[0].x*x + rot[0].y*y + rot[0].z*z,
+                rot[1].x*x + rot[1].y*y + rot[1].z*z,
+                rot[2].x*x + rot[2].y*y + rot[2].z*z
             )
         return new_vec
             
 
     
-    def __add__(self, other):
+    def __add__(self, other:Vec3 | any):
         if isinstance(other, Vec3):
             return Vec3(self.x + other.x,
             self.y + other.y,
@@ -113,7 +124,7 @@ class Vec3:
             self.y + other,
             self.z + other)
 
-    def __sub__(self, other:Vec3):
+    def __sub__(self, other:Vec3 | any):
         if isinstance(other, Vec3):
             return Vec3(self.x - other.x,
             self.y - other.y,
@@ -123,7 +134,7 @@ class Vec3:
             self.y - other,
             self.z - other)
 
-    def __mul__(self, other:Vec3):
+    def __mul__(self, other:Vec3 | any):
         if isinstance(other, Vec3):
             return Vec3(self.x * other.x,
             self.y * other.y,
@@ -133,7 +144,7 @@ class Vec3:
             self.y * other,
             self.z * other)
 
-    def __div__(self, other):
+    def __div__(self, other:Vec3 | any):
         if isinstance(other, Vec3):
             return Vec3(self.x / other.x,
             self.y / other.y,
@@ -143,7 +154,7 @@ class Vec3:
             self.y / other,
             self.z / other)
 
-    def __pow__(self, other):
+    def __pow__(self, other:Vec3 | any):
         if isinstance(other, Vec3):
             return Vec3(self.x ** other.x,
             self.y ** other.y,
@@ -153,7 +164,7 @@ class Vec3:
             self.y ** other,
             self.z ** other)
 
-    def __neg__(self,):
+    def __neg__(self):
         return Vec3(-self.x,
         -self.y,
         -self.z)

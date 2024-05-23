@@ -11,10 +11,11 @@ from vertex import Vec3
 
 
 class Object:
-    def __init__(self, mesh:Mesh, position:Vec3 | None = None, rotation:Vec3 | None = None) -> None:
+    def __init__(self, mesh:Mesh, position:Vec3 | None = None, rotation:Vec3 | None = None, scale:Vec3 | None = None) -> None:
         self.mesh = mesh
         self.position = position if position else Vec3(0,0,0)
         self.rotation = rotation if rotation else Vec3(0,0,0)
+        self.scale = scale if scale else Vec3(0,0,0)
         self.rot_cache:Vec3 | None = None
     
     def render(self,
