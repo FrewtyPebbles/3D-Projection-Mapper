@@ -1,7 +1,7 @@
+# distutils: language=c++
 from vertex cimport Vec3
-from object import Object
-from typing import Callable
-from mesh import Polygon
+from object cimport Object
+from libcpp.vector cimport vector
 
 cdef class Screen:
     cdef public int width
@@ -12,11 +12,13 @@ cdef class Camera:
     cdef public int view_width
     cdef public int view_height
     cdef public int view_distance
-    cdef public list[list[int]] depth_buffer
-    cdef public list[list[int]] cleared_depth_buffer
+    cdef public vector[vector[float]] depth_buffer
+    cdef public vector[vector[float]] cleared_depth_buffer
 
+    cpdef public void set_depth_buffer(self, int x, int y, float depth)
+
+    cpdef public float get_depth_buffer(self, int x, int y)
+    
     cpdef public void clear_depth_buffer(self)
 
-    cpdef public void _render(self, list[Object] objects,
-    render_function:Callable[[Polygon],None] | None,
-    wire_render_func:Callable[[Vec3, Vec3],void] | None)
+    cpdef public void _render(self, list[Object] objects, object render_function, object wire_render_func)

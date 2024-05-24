@@ -1,8 +1,6 @@
 from os import getenv
 from setuptools import Extension, setup
 from Cython.Build import cythonize
-from dotenv import load_dotenv
-load_dotenv()
 
 
 

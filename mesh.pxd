@@ -5,9 +5,9 @@ from typing import Callable
 cdef class Polygon:
     cdef public list[Vec3] connections
 
-    cpdef render_lines(self, render_func:Callable[[Vec3, Vec3],None])
+    cpdef render_lines(self, object render_func)
 
-    cpdef list[tuple[float, float]] project(self, Camera camera, Screen screen)
+    cpdef public list[(float, float)] project(self, Camera camera, Screen screen)
 
     cpdef ((float,float),(float,float)) get_projection_rect(self, Camera camera, Screen screen)
     

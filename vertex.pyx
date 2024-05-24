@@ -1,19 +1,15 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from functools import lru_cache
-import math as m
-import struct
-from typing import TYPE_CHECKING
 
 
-if TYPE_CHECKING:
-    from camera import Camera, Screen
+from libc.math cimport sqrt, cosf, sinf, fmaf
 
+from camera cimport Camera, Screen
+cimport cython
 
 
 
 cdef class Vec3:
-    def __init__(self, x:float = 0.0, y:float = 0.0, z:float = 0.0):
+    def __init__(self, float x = 0.0, float y = 0.0, float z = 0.0):
         self.x = x
         self.y = y
         self.z = z
@@ -21,6 +17,9 @@ cdef class Vec3:
     def __repr__(self) -> str:
         return "Vec3< {}, {}, {} >".format(self.x, self.y, self.z)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef (float, float) project(self, Camera camera, Screen screen):
         cdef float x = self.x
         cdef float y = self.y
@@ -43,9 +42,12 @@ cdef class Vec3:
     def __deepcopy__(self):
         return self.clone()
     
+    cpdef bint eq_vec(self, Vec3 other):
+        return self.x == other.x * self.y == other.y * self.z == other.z
+
     def __eq__(self, other:Vec3 | any):
         if isinstance(other, Vec3):
-            return self.x == other.x and self.y == other.y and self.z == other.z
+            return self.eq_vec(other)
         else:
             return False
 
@@ -53,10 +55,10 @@ cdef class Vec3:
     cpdef Vec3 clone(self):
         return Vec3(self.x, self.y, self.z)
     
-    cpdef tuple[float, float, float] tuple(self):
+    cpdef (float, float, float) tuple(self):
         return (self.x, self.y, self.z)
     
-    cpdef tuple[float, float] tuple2d(self):
+    cpdef (float, float) tuple2d(self):
         return (self.x, self.y)
     
     
@@ -64,7 +66,7 @@ cdef class Vec3:
         cdef float x = self.x
         cdef float y = self.y
         cdef float z = self.z
-        return m.sqrt(x**2 + y**2 + z**2)
+        return sqrt(fmaf(x, x, fmaf(y, y, z*z)))
     
     cpdef public Vec3 get_normalized(self):
         cdef float mag = self.get_magnitude()
@@ -74,26 +76,26 @@ cdef class Vec3:
     
     
     @staticmethod
-    cdef public tuple[list[Vec3],list[Vec3],list[Vec3]] get_rotation_matrix(Vec3 rot):
+    cdef tuple[list[Vec3], list[Vec3], list[Vec3]] get_rotation_matrix(Vec3 rot):
         return (
             [ # X ROTATION
                 Vec3(1.0, 0.0, 0.0),
-                Vec3(0.0, m.cos(rot.x), -m.sin(rot.x)),
-                Vec3(0.0, m.sin(rot.x), m.cos(rot.x))
+                Vec3(0.0, cosf(rot.x), -sinf(rot.x)),
+                Vec3(0.0, sinf(rot.x), cosf(rot.x))
             ],
             [ # Y ROTATION
-                Vec3(m.cos(rot.y), 0.0, m.sin(rot.y)),
+                Vec3(cosf(rot.y), 0.0, sinf(rot.y)),
                 Vec3(0.0, 1.0, 0.0),
-                Vec3(-m.sin(rot.y), 0.0, m.cos(rot.y))
+                Vec3(-sinf(rot.y), 0.0, cosf(rot.y))
             ],
             [ # Z ROTATION
-                Vec3(m.cos(rot.z), -m.sin(rot.z), 0.0),
-                Vec3(m.sin(rot.z), m.cos(rot.z), 0.0),
+                Vec3(cosf(rot.z), -sinf(rot.z), 0.0),
+                Vec3(sinf(rot.z), cosf(rot.z), 0.0),
                 Vec3(0.0, 0.0, 1.0)
             ],
         )
     
-
+    
     cpdef public Vec3 rotate(self, Vec3 rotation):
         cdef Vec3 new_vec = self.clone()
         cdef float x
@@ -101,54 +103,137 @@ cdef class Vec3:
         cdef float z
         if rotation == Vec3(0,0,0):
             return new_vec
+
+        cdef list[Vec3] rot
+        
         for rot in Vec3.get_rotation_matrix(rotation):
             x = new_vec.x
             y = new_vec.y
             z = new_vec.z
             new_vec = Vec3(
-                rot[0].x*x + rot[0].y*y + rot[0].z*z,
-                rot[1].x*x + rot[1].y*y + rot[1].z*z,
-                rot[2].x*x + rot[2].y*y + rot[2].z*z
+                fmaf(rot[0].x, x, fmaf(rot[0].y, y, rot[0].z*z)),
+                fmaf(rot[1].x, x, fmaf(rot[1].y, y, rot[1].z*z)),
+                fmaf(rot[2].x, x, fmaf(rot[2].y, y, rot[2].z*z))
             )
         return new_vec
             
+    # ADD
 
+    cpdef Vec3 add_vec(self, Vec3 other):
+        return Vec3(self.x + other.x,
+            self.y + other.y,
+            self.z + other.z)
+
+    cpdef Vec3 add_float(self, float other):
+        return Vec3(self.x + other,
+            self.y + other,
+            self.z + other)
+
+    cpdef Vec3 add_int(self, int other):
+        return Vec3(self.x + other,
+            self.y + other,
+            self.z + other)
     
     def __add__(self, other:Vec3 | any):
         if isinstance(other, Vec3):
-            return Vec3(self.x + other.x,
-            self.y + other.y,
-            self.z + other.z)
+            return self.add_vec(other)
+        elif isinstance(other, float):
+            return self.add_float(other)
+        elif isinstance(other, int):
+            return self.add_int(other)
         else:
             return Vec3(self.x + other,
             self.y + other,
             self.z + other)
 
-    def __sub__(self, other:Vec3 | any):
-        if isinstance(other, Vec3):
-            return Vec3(self.x - other.x,
+    # SUBTRACT
+
+    cpdef Vec3 sub_vec(self, Vec3 other):
+        return Vec3(self.x - other.x,
             self.y - other.y,
             self.z - other.z)
+
+    cpdef Vec3 sub_float(self, float other):
+        return Vec3(self.x - other,
+            self.y - other,
+            self.z - other)
+
+    cpdef Vec3 sub_int(self, int other):
+        return Vec3(self.x - other,
+            self.y - other,
+            self.z - other)
+
+    def __sub__(self, other:Vec3 | any):
+        if isinstance(other, Vec3):
+            return self.sub_vec(other)
+        elif isinstance(other, float):
+            return self.sub_float(other)
+        elif isinstance(other, int):
+            return self.sub_int(other)
         else:
             return Vec3(self.x - other,
             self.y - other,
             self.z - other)
 
-    def __mul__(self, other:Vec3 | any):
-        if isinstance(other, Vec3):
-            return Vec3(self.x * other.x,
+    # MULTIPLY
+
+    cpdef Vec3 mul_vec(self, Vec3 other):
+        return Vec3(self.x * other.x,
             self.y * other.y,
             self.z * other.z)
+
+    cpdef Vec3 mul_float(self, float other):
+        return Vec3(self.x * other,
+            self.y * other,
+            self.z * other)
+
+    cpdef Vec3 mul_int(self, int other):
+        return Vec3(self.x * other,
+            self.y * other,
+            self.z * other)
+
+    def __mul__(self, other:Vec3 | any):
+        if isinstance(other, Vec3):
+            return self.mul_vec(other)
+        elif isinstance(other, float):
+            return self.mul_float(other)
+        elif isinstance(other, int):
+            return self.mul_int(other)
         else:
             return Vec3(self.x * other,
             self.y * other,
             self.z * other)
 
-    def __div__(self, other:Vec3 | any):
-        if isinstance(other, Vec3):
-            return Vec3(self.x / other.x,
+    # DIVIDE
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef Vec3 div_vec(self, Vec3 other):
+        return Vec3(self.x / other.x,
             self.y / other.y,
             self.z / other.z)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef Vec3 div_float(self, float other):
+        return Vec3(self.x / other,
+            self.y / other,
+            self.z / other)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef Vec3 div_int(self, int other):
+        return Vec3(self.x / other,
+            self.y / other,
+            self.z / other)
+
+    def __truediv__(self, other:Vec3 | any):
+        if isinstance(other, Vec3):
+            return self.div_vec(other)
+        elif isinstance(other, float):
+            return self.div_float(other)
+        elif isinstance(other, int):
+            return self.div_int(other)
         else:
             return Vec3(self.x / other,
             self.y / other,
@@ -164,7 +249,10 @@ cdef class Vec3:
             self.y ** other,
             self.z ** other)
 
-    def __neg__(self):
+    cpdef Vec3 neg(self):
         return Vec3(-self.x,
         -self.y,
         -self.z)
+
+    def __neg__(self):
+        return self.neg()

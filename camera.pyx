@@ -1,12 +1,15 @@
+# distutils: language=c++
 from __future__ import annotations
 from typing import Callable
-from mesh import Polygon
-from object import Object
 import math as m
+
 from vertex cimport Vec3
+from mesh cimport Polygon
+from object cimport Object
+cimport cython
 
 cdef class Screen:
-    def __init__(self, width:int, height:int) -> None:
+    def __init__(self, int width, int height) -> None:
         self.width = width
         self.height = height
     
@@ -16,24 +19,50 @@ cdef class Camera:
         self.view_width = view_width
         self.view_height = view_height
         self.view_distance = view_distance
-        self.cleared_depth_buffer = [[m.inf for _ in range(view_height)] for _ in range(view_width)]
-        self.depth_buffer = [[m.inf for _ in range(view_height)] for _ in range(view_width)]
+        
+        # create "empty" depth buffer
 
+        cdef float inf = m.inf
+        cdef vector[vector[float]] outer_vec
+        cdef vector[float] inner_vec
+        cdef int _
+        for _ in range(view_width):
+            inner_vec.clear()
+            for _ in range(view_height):
+                inner_vec.push_back(inf)
+            outer_vec.push_back(inner_vec)
 
+        self.cleared_depth_buffer = outer_vec
+
+        self.depth_buffer = outer_vec
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef public void set_depth_buffer(self, int x, int y, float depth):
+        self.depth_buffer[x][y] = depth
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef public float get_depth_buffer(self, int x, int y):
+        return self.depth_buffer[x][y]
 
     cpdef public void clear_depth_buffer(self):
-        cdef float inf = m.inf
-        self.depth_buffer = [[inf for _ in range(self.view_height)] for _ in range(self.view_width)]
+        #cdef float inf = m.inf
+        self.depth_buffer = self.cleared_depth_buffer
 
-    def render(self, objects:list[Object],
-    render_function:Callable[[Polygon],None] | None = None,
-    wire_render_func:Callable[[Vec3, Vec3],void] | None = None):
+    def render(self, list[Object] objects, object render_function = None, object wire_render_func = None):
+        """
+        render_func:Callable[[Camera,Polygon],None]
+
+        wire_render_func:Callable[[Camera,Vec3, Vec3],None]
+        """
         self._render(objects, render_function, wire_render_func)
 
-    cpdef public void _render(self, list[Object] objects,
-    render_function:Callable[[Polygon],None] | None,
-    wire_render_func:Callable[[Vec3, Vec3],void] | None):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef public void _render(self, list[Object] objects, object render_function, object wire_render_func):
+        cdef Object obj
         for obj in objects:
-            obj.render(render_function, wire_render_func)
+            obj._render(render_function, wire_render_func)
             
         self.clear_depth_buffer()

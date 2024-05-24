@@ -1,3 +1,4 @@
+# distutils: language=c++
 from mesh cimport Mesh, Polygon
 from vertex cimport Vec3
 from typing import Callable
@@ -9,10 +10,7 @@ cdef class Object:
     cdef public Vec3 scale
     cdef public Vec3 rot_cache
 
-    cpdef public void render(self,
-        render_function:Callable[[Polygon],None] | None,
-        wire_render_func:Callable[[Vec3, Vec3],None] | None
-    )
+    cpdef void _render(self, object render_function, object wire_render_func)
 
     cpdef public list[Vec3] get_translation(self, list[Vec3] vertexes)
 

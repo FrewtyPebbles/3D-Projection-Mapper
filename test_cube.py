@@ -4,11 +4,14 @@ from camera import Screen, Camera
 from mesh import Mesh, Polygon
 from object import Object
 from vertex import Vec3
+from pil_rasterize import cyth_render
 import math as m
 
+dim = (500, 500)
+
 # Use PIL as render medium
-img = Image.new("RGB", (500,500))
-background = Image.open("./assets\space.jpg").resize((500,500))
+img = Image.new("RGB", dim)
+background = Image.open("./assets\space.jpg").resize(dim)
 img_draw = ImageDraw.Draw(img)
 
 # Create Screen and Camera
@@ -25,19 +28,7 @@ def wire_render_func(pos_1:Vec3, pos_2:Vec3):
 
 def render_func(polygon:Polygon):
     "Polygon render function"
-    (min_x, min_y), (max_x, max_y) = polygon.get_projection_rect(camera, screen)
-    avg_d_norm = sum([vec3.get_normalized().z * 255 for vec3 in polygon.connections])/len(polygon.connections)
-    shade = 255-int(avg_d_norm)
-
-    avg_d = sum([vec3.z for vec3 in polygon.connections])/len(polygon.connections)
-
-    for y in range(int(min_y), int(max_y)):
-        for x in range(int(min_x), int(max_x)):
-            if (camera.depth_buffer[x][y] > avg_d) \
-            if camera.depth_buffer[x][y] != None else True:
-                if polygon.in_projection(x,y, camera, screen):
-                    img_draw.point((x,y), (shade, shade, shade, 255))
-                    camera.depth_buffer[x][y] = avg_d
+    cyth_render(screen, camera, polygon, img_draw)
 
 # Load the mesh/create the 3D object
 t1 = time.time()
@@ -61,7 +52,7 @@ cube = Object(Mesh(
         [0,3,7,4],
         [2,3,7,6],
     ]
-), Vec3(0, 0, 60))
+), Vec3(0, 0, 50))
 t2 = time.time()
 print(f"time to load mesh: {(t2-t1)*1000}")
 
@@ -71,7 +62,7 @@ t1 = time.time()
 
 img.paste(background)
 camera.render([cube], render_func)
-img_draw.text((0,0), "DENTED CUBE ROTATE")
+img_draw.text((0,0), f"DENTED CUBE FPS: ?")
 frames.append(img.copy())
 
 for _ in range(60):
@@ -81,7 +72,7 @@ for _ in range(60):
     camera.render([cube], render_func)
     rt2 = time.time()
     print(f"\tframe render time: {(rt2-rt1)*1000} ms")
-    img_draw.text((0,0), "DENTED CUBE ROTATE")
+    img_draw.text((0,0), f"DENTED CUBE FPS: {1000/((rt2-rt1)*1000):.3f}")
     frames.append(img.copy())
 
 t2 = time.time()
