@@ -47,12 +47,12 @@ cube = Object(Mesh(
     [
         [0,1,2,3],
         [4,5,6,7],
-        [0,1,5,4],
-        [1,2,6,5],
-        [0,3,7,4],
-        [2,3,7,6],
+        [0,1,4,5],
+        [1,2,5,6],
+        [0,3,4,7],
+        [2,3,6,7],
     ]
-), Vec3(0, 0, 50))
+), Vec3(0, 0, 50), Vec3(0,0,0))
 t2 = time.time()
 print(f"time to load mesh: {(t2-t1)*1000}")
 
@@ -65,7 +65,7 @@ camera.render([cube], render_func)
 img_draw.text((0,0), f"DENTED CUBE FPS: ?")
 frames.append(img.copy())
 
-for _ in range(60):
+for _ in range(20):#60
     img.paste(background)
     cube.rotation.y += 0.2
     rt1 = time.time()

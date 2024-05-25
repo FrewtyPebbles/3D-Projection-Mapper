@@ -27,6 +27,7 @@ cpdef void cyth_render(Screen screen, Camera camera, Polygon polygon, object img
     max_x, max_y = <int>t_max[0], <int>t_max[1]
     for y in range(min_y, max_y):
         x1, x2 = polygon.get_render_row_range(y, projections)
+        
         for x in range(max(0, x1), min(x2, camera.view_width)):
             z = polygon.bary_get_z(x,y)
             if 0 < dbuff[0][x][y] > z:

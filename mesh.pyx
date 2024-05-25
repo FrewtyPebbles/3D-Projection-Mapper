@@ -210,8 +210,20 @@ cdef class Mesh:
 
         cdef list[int] v_inds
         cdef int i
+        cdef list[Vec3] poly_buffer
         for v_inds in self.polygons:
-            polygons.append(Polygon([vertexes[i] for i in v_inds]))
+            poly_buffer = []
+            for i in v_inds:
+                if len(poly_buffer) == 2:
+                    poly_buffer.append(vertexes[i])
+                    polygons.append(Polygon(poly_buffer))
+                    poly_buffer = []
+                    poly_buffer.append(vertexes[i])
+                else:
+                    poly_buffer.append(vertexes[i])
+            if len(poly_buffer) == 2:
+                poly_buffer.append(vertexes[0])
+                polygons.append(Polygon(poly_buffer))
         
         return polygons
     
