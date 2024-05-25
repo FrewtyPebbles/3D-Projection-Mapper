@@ -8,7 +8,6 @@ cdef class Object:
     cdef public Vec3 position
     cdef public Vec3 rotation
     cdef public Vec3 scale
-    cdef public Vec3 rot_cache
 
     cpdef void _render(self, object render_function, object wire_render_func)
 

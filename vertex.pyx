@@ -101,8 +101,6 @@ cdef class Vec3:
         cdef float x
         cdef float y
         cdef float z
-        if rotation == Vec3(0,0,0):
-            return new_vec
 
         cdef list[Vec3] rot
         
@@ -116,6 +114,19 @@ cdef class Vec3:
                 fmaf(rot[2].x, x, fmaf(rot[2].y, y, rot[2].z*z))
             )
         return new_vec
+
+    def __matmul__(self, Vec3 other):
+        return self.cross_prod(other)
+
+    cpdef public Vec3 cross_prod(self, Vec3 other):
+        cdef:
+            float det_x = self.y*other.z-self.z*other.y
+            float det_y = self.x*other.z-self.z*other.x
+            float det_z = self.x*other.y-self.y*other.x
+        return Vec3(det_x, -det_y, det_z)
+
+    cpdef public Vec3 dot(self, Vec3 other):
+        return fmaf(self.x, other.x, fmaf(self.y, other.y, self.z*other.z))
             
     # ADD
 

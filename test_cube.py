@@ -67,7 +67,7 @@ frames.append(img.copy())
 
 for _ in range(60):
     img.paste(background)
-    cube.rotation += 0.2
+    cube.rotation.y += 0.2
     rt1 = time.time()
     camera.render([cube], render_func)
     rt2 = time.time()

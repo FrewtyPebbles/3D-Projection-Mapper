@@ -10,7 +10,6 @@ cdef class Object:
         self.position = position if position else Vec3(0,0,0)
         self.rotation = rotation if rotation else Vec3(0,0,0)
         self.scale = scale if scale else Vec3(0,0,0)
-        self.rot_cache = None
 
     def render(self, object render_function = None, object wire_render_func = None):
         """
@@ -48,10 +47,6 @@ cdef class Object:
 
     cpdef public list[Vec3] get_rotation(self, list[Vec3] vertexes):
         cdef Vec3 rot = self.rotation
-        if self.rot_cache == rot:
-            return vertexes
-        self.rot_cache = rot
-
         cdef list[Vec3] ret_verts = []
         cdef Vec3 vert
         for vert in vertexes:

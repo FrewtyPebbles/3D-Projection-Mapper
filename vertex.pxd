@@ -1,9 +1,9 @@
 from camera cimport Camera, Screen
 
+ctypedef ((float,float),(float,float)) mat2x2
+
 cdef class Vec3:
-    cdef public float x
-    cdef public float y
-    cdef public float z
+    cdef public float x,y,z
     
     cpdef (float, float) project(self, Camera camera, Screen screen)
 
@@ -16,6 +16,10 @@ cdef class Vec3:
     cdef tuple[list[Vec3],list[Vec3],list[Vec3]] get_rotation_matrix(Vec3 rot)
     
     cpdef public Vec3 rotate(self, Vec3 rotation)
+
+    cpdef public Vec3 cross_prod(self, Vec3 other)
+    
+    cpdef public Vec3 dot(self, Vec3 other)
 
     cpdef (float, float, float) tuple(self)
 

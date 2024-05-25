@@ -10,6 +10,8 @@ cdef class OBJParser:
         cdef list[str] src = []
         cdef list[str] tokens = []
         cdef str _,x,y,z,line,prefix = ""
+        cdef list[int] face, poly_buffer
+        cdef int i, face_len
 
         with open(self.file_path, "r") as file:
             src = file.readlines()
@@ -30,9 +32,19 @@ cdef class OBJParser:
                         )
                     )
                 elif prefix == 'f':
-                    polygons.append(
-                        OBJParser.parse_face(tokens[1:])
-                    )
+                    face = OBJParser.parse_face(tokens[1:])
+                    face_len = len(face)
+                    poly_buffer = []
+                    for i in range(face_len):
+                        if len(poly_buffer) == 2:
+                            poly_buffer.append(face[i-3])
+                            polygons.append(poly_buffer)
+                            poly_buffer = []
+                            poly_buffer.append(face[i-1])
+                        poly_buffer.append(face[i])
+                    poly_buffer.append(face[i-3])
+                    polygons.append(poly_buffer)
+
                 elif prefix == 'vt':
                     pass
                 elif prefix == 'g':

@@ -6,6 +6,7 @@ import math as m
 from vertex cimport Vec3
 from mesh cimport Polygon
 from object cimport Object
+from libc.math cimport INFINITY
 cimport cython
 
 cdef class Screen:
@@ -22,14 +23,13 @@ cdef class Camera:
         
         # create "empty" depth buffer
 
-        cdef float inf = m.inf
         cdef vector[vector[float]] outer_vec
         cdef vector[float] inner_vec
         cdef int _
         for _ in range(view_width):
             inner_vec.clear()
             for _ in range(view_height):
-                inner_vec.push_back(inf)
+                inner_vec.push_back(INFINITY)
             outer_vec.push_back(inner_vec)
 
         self.cleared_depth_buffer = outer_vec

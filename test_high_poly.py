@@ -33,7 +33,7 @@ def render_func(polygon:Polygon):
 # Load the mesh/create the 3D object
 t1 = time.time()
 scale = 20
-thing = Object(Mesh.from_file("./meshes/Augenglaeser_C.obj"), Vec3(0, 0, 30))
+thing = Object(Mesh.from_file("./meshes/Augenglaeser_C.obj"), Vec3(0, -7, 30))
 t2 = time.time()
 print(f"time to load mesh({len(thing.mesh.polygons)} gons): {(t2-t1)*1000:.3f} ms")
 
@@ -48,7 +48,7 @@ frames.append(img.copy())
 
 for _ in range(60):
     img.paste(background)
-    thing.rotation += 0.2
+    thing.rotation.y += 0.2
     rt1 = time.time()
     camera.render([thing], render_func)
     rt2 = time.time()

@@ -7,6 +7,7 @@ from vertex cimport Vec3
 from cython.parallel import prange
 from cython cimport address
 from obj_parser cimport OBJParser
+from libc.math cimport fmaf, INFINITY, floor, ceil
 
 cdef extern from "macros.h":
     cdef float c_min2(...)
@@ -14,9 +15,67 @@ cdef extern from "macros.h":
 
 cimport cython
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cpdef (float,float) lerp2d(float x, float x0,float y0,float x1,float y1):
+    cdef float y = y0 + (x - x0)*((y1-y0)/(x1-x0))
+    return x,y
+
+
 cdef class Polygon:
     def __init__(self, list[Vec3] connections) -> None:
         self.connections = connections
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef float bary_get_z(self, x, y):
+        cdef:
+            Vec3 a = self.connections[0]
+            Vec3 b = self.connections[0]
+            #c = self.connections[0]
+            
+            float apx = a.x/a.z
+            float bpx = b.x/b.z
+            float bpxdiffapx = (bpx-apx)
+            float b_coord = (x - apx)/ (bpxdiffapx if bpxdiffapx != 0 else 0.001)
+
+            float z = fmaf(a.z, (1-b_coord), b.z*b_coord)
+        return z
+
+    cpdef (int, int) get_render_row_range(self, int y, list[(float, float)] projections):
+        cdef:
+            (float,float) p1 = projections[0]
+            (float,float) p2 = projections[1]
+            (float,float) p3 = projections[2]
+            float denom1 = (p2[0]-p1[0])
+            float denom2 = (p3[0]-p2[0])
+            float denom3 = (p1[0]-p3[0])
+            float a1 = (p2[1]-p1[1])/denom1 if denom1 != 0 else 1
+            float a2 = (p3[1]-p2[1])/denom2 if denom2 != 0 else 1
+            float a3 = (p1[1]-p3[1])/denom3 if denom3 != 0 else 1
+
+            float b1 = p1[1]-a1*p1[0]
+            float b2 = p2[1]-a2*p2[0]
+            float b3 = p3[1]-a3*p3[0]
+            float y1,y2,a,b
+            list[int] xs = []
+        y+= 1
+        for y1, y2, a, b in [(p1[1], p2[1], a1, b1), (p2[1], p3[1], a2, b2), (p3[1], p1[1], a3, b3)]:
+            y1, y2 = sorted((y1,y2))
+            #print(floor(y1) , y , floor(y2))
+            if floor(y1) < y <= floor(y2):
+                if a != 0:
+                    xs.append(<int>((y-b)/a))
+                else:
+                    xs.append(1)
+        
+        return (xs[0], xs[1]) if xs[0] < xs[1] else (xs[1], xs[0])
+
+
+            
+
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -36,17 +95,46 @@ cdef class Polygon:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef public list[(float, float)] project(self, Camera camera, Screen screen):
-        cdef list[(float, float)] ret_vec = []
+        cdef list[(float, float)] ret_projs = []
         cdef Vec3 con
         for con in self.connections:
-            ret_vec.append(con.project(camera, screen))
-        return ret_vec
+            ret_projs.append(con.project(camera, screen))
+        return ret_projs
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef (float,float,float) get_subtriangle_ratios(self, float x, float y, list[(float, float)] projections):
+        cdef float ax, ay, bx, by, cx, cy = 0.0
+        ax, ay = projections[0]
+        bx, by = projections[1]
+        cx, cy = projections[2]
+        cdef:
+            
+            (float, float) ab = (bx-ax, by-ay)
+            (float, float) bc = (cx-bx, cy-by)
+            (float, float) ca = (ax-cx, ay-cy)
+            # p is x,y
+            (float, float) p = (x-ax, y-ay)
+            # scalar cross prod ab, bc, ca with p
+            float dot_1 = ab[0]*p[1] - ab[1]*p[0]
+            float dot_2 = bc[0]*p[1] - bc[1]*p[0]
+            float dot_3 = ca[0]*p[1] - ca[1]*p[0]
+
+            float total = dot_1 + dot_2 + dot_3
+
+            float rat_1 = dot_1/2
+            float rat_2 = dot_2/2
+            float rat_3 = dot_3/2
+            
+
+        return (rat_1,rat_2,rat_3)
     
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef ((float,float),(float,float)) get_projection_rect(self, Camera camera, Screen screen):
+    cpdef ((float,float),(float,float)) get_projection_rect(self, list[(float, float)] projections, Camera camera):
         cdef:
-            list[(float,float)] coords = self.project(camera, screen)
+            list[(float,float)] coords = projections
             float x = coords[0][0]
             float y = coords[0][1]
             float min_x = x
@@ -76,7 +164,7 @@ cdef class Polygon:
                 if (_min_x[0] > x):
                     _min_x[0] = x
 
-        return (c_max2(0.0, min_x-1), c_max2(0.0, min_y-1)),(c_min2(max_x+1, <float>camera.view_width), c_min2(max_y+1, <float>camera.view_height))
+        return (c_max2(0.0, min_x), c_max2(0.0, min_y)),(c_min2(max_x, <float>camera.view_width), c_min2(max_y, <float>camera.view_height))
     
     @cython.boundscheck(False)
     @cython.wraparound(False)
