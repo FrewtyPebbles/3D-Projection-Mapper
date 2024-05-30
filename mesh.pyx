@@ -22,27 +22,35 @@ cpdef (float,float) lerp2d(float x, float x0,float y0,float x1,float y1):
     cdef float y = y0 + (x - x0)*((y1-y0)/(x1-x0))
     return x,y
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cpdef (float,float,float) barycentric_coords(float x1, float y1, float x2, float y2, float x3, float y3,
+float xp, float yp):
+    cdef:
+        float exp1 = xp - x3
+        float exp2 = yp - y3
+        float det = fmaf((x1 - x3), (y2 - y3), -(x2 - x3)*(y1 - y3))
+        float u1 = fmaf((y2 - y3), (exp1), (x3 - x2)*(exp2))/det
+        float u2 = fmaf((y3 - y1), (exp1), (x1 - x3)*(exp2))/det
+        float u3 = 1 - u1 - u2
+    return u1, u2, u3
+
 
 cdef class Polygon:
     def __init__(self, list[Vec3] connections) -> None:
         self.connections = connections
 
+    def __repr__(self) -> str:
+        return f"polygon<{self.connections}>"
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef float bary_get_z(self, x, y):
+    cpdef float bary_get_z(self, int x, int y, list[(float, float)] proj):
         cdef:
-            Vec3 a = self.connections[0]
-            Vec3 b = self.connections[0]
-            #c = self.connections[0]
-            
-            float apx = a.x/a.z
-            float bpx = b.x/b.z
-            float bpxdiffapx = (bpx-apx)
-            float b_coord = (x - apx)/ (bpxdiffapx if bpxdiffapx != 0 else 0.001)
-
-            float z = fmaf(a.z, (1-b_coord), b.z*b_coord)
-        return z
+            (float,float,float) b_coords = barycentric_coords(proj[0][0], proj[0][1], proj[1][0], proj[1][1], proj[2][0], proj[2][1], x, y);
+        return fmaf(self.connections[0].z, b_coords[0], fmaf(self.connections[1].z, b_coords[1], self.connections[2].z*b_coords[2]))
 
     cpdef (int, int) get_render_row_range(self, int y, list[(float, float)] projections):
         cdef:
@@ -66,10 +74,12 @@ cdef class Polygon:
             y1, y2 = sorted((y1,y2))
             #print(floor(y1) , y , floor(y2))
             if floor(y1) < y <= floor(y2):
-                if a != 0:
-                    xs.append(<int>((y-b)/a))
-                else:
-                    xs.append(1)
+                #print(f"y={y}, y1={y1}, y2={y2}, a={a}, b={b}, (y-b)/a={<int>((y-b)/a)}")
+                # if a != 0:
+                #     xs.append(<int>((y-b)/a))
+                # else:
+                #     xs.append(1)
+                xs.append(<int>((y-b)/a))
         
         return (xs[0], xs[1]) if xs[0] < xs[1] else (xs[1], xs[0])
 
@@ -209,21 +219,15 @@ cdef class Mesh:
         cdef list[Polygon] polygons = []
 
         cdef list[int] v_inds
-        cdef int i
-        cdef list[Vec3] poly_buffer
+
         for v_inds in self.polygons:
-            poly_buffer = []
-            for i in v_inds:
-                if len(poly_buffer) == 2:
-                    poly_buffer.append(vertexes[i])
-                    polygons.append(Polygon(poly_buffer))
-                    poly_buffer = []
-                    poly_buffer.append(vertexes[i])
-                else:
-                    poly_buffer.append(vertexes[i])
-            if len(poly_buffer) == 2:
-                poly_buffer.append(vertexes[0])
-                polygons.append(Polygon(poly_buffer))
+            polygons.append(Polygon([
+                vertexes[v_inds[0]],
+                vertexes[v_inds[1]],
+                vertexes[v_inds[2]]
+            ]))
+
+        #print(polygons)
         
         return polygons
     

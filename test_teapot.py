@@ -35,7 +35,7 @@ if __name__ == "__main__":
     t1 = time.time()
     teapot = Object(Mesh.from_file("./meshes/teapot.obj"), Vec3(0, -50, 100))
     t2 = time.time()
-    print(f"time to load mesh: {(t2-t1)*1000}")
+    print(f"time to load mesh({len(teapot.mesh.polygons)} gons): {(t2-t1)*1000}")
 
     # Record the animation frames
     frames = []

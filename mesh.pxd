@@ -4,10 +4,12 @@ from typing import Callable
 
 cpdef (float,float) lerp2d(float x, float x0,float y0,float x1,float y1)
 
+cpdef (float,float,float) barycentric_coords(float x1, float y1, float x2, float y2, float x3, float y3, float xp, float yp)
+
 cdef class Polygon:
     cdef public list[Vec3] connections
 
-    cpdef float bary_get_z(self, x, y)
+    cpdef float bary_get_z(self, int x, int y, list[(float, float)] proj)
 
     cpdef (int, int) get_render_row_range(self, int y, list[(float, float)] projections)
 
